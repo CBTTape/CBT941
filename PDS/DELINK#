@@ -1,0 +1,18 @@
+Function:
+ 	This standalone job is used to "de-link" load module or program object
+        to NCALs.
+
+Syntax:
+        SUBMIT DELINK
+
+Usage:
+  	This job ran program binder (ex. linkage editor) to get a load module
+        or program object map, then generate a sequence of program binder
+        control statements using DFSORT to extract each control section to the
+        separate member ("de-link).
+        Specify data set names and member name on the lines 3-5 of the job.
+
+        Please note: JCL features available since z/OS 2.1 is used.
+
+        This job is an example how to do some meaningful things using standard
+        tools only, without writing a program or even script.

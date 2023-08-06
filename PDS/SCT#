@@ -1,0 +1,43 @@
+Preface
+
+	Source Cloning Tool (SCT) is a tool to assist the developer in
+        maintaining and testing the software. The tool copies a code
+	from source libraries, usually SCLM-controlled libraries (therefore
+	SCT also can be considered as SCLM Cloning Tool), to the test or
+	production environment, renaming and updating members as necessary
+	to enable code to be executed in a particular environment.
+
+	Typically, source code of most mainframe application projects are
+	maintained with SCLM. SLCM makes the process of source code changes
+	and creating an executables (build) quite easy and fully controlled.
+	However, the source code usually has several references to the
+	environment. The term "environment" here means a set of application
+	run-time libraries as well as system objects such as DB2 tables, IMS
+	regions, IMS transactions, CICS regions, OPC job nets and so on.
+	Source code normally referred to the "production" environment, to
+	test the new changes is necessary to have some test environment, and
+	this test environment usually cannot be the exactly the same as the
+	production environment. Even if we can maintain one instance of the
+	test environment very close to production environment, we can't do
+	the same for two or more instances. There are different possibilities
+	to create such test environment without using special tools, however,
+	all these approaches have several disadvantages and require manual
+	actions. SCT offer an automatic, fully controlled support of the
+	several testing environments. The general approach of SCT consists
+	of two steps:
+	- Define the cloning process for a new project
+	- Perform on demand cloning based on the predefined project
+
+	Once defined, cloning process becomes fully automatic and can be
+	easily done even by an inexperienced developer. Thus, SCT allow easily
+	maintain several test environments aka clones, so it's even possible
+	to have a separate test environment for each developer.
+
+Installation
+
+	The SCT tool is packaged in the single library member: SCT. Any
+        high-level qualifier (HLQ) can be used for SCT libraries. SCT does
+	not need to be adapted to the particular system environment.
+
+        Complete SCT description delivered as HTML document (UTF-8 encoded).
+

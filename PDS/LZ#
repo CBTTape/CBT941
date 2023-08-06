@@ -1,0 +1,32 @@
+Function:
+ 	LZ view content of ZIP archives under z/OS ISPF
+
+Syntax:
+        LZ Ýarchive¨
+        where archive is:
+        - a quoted full-qualified data set name like 'IBMUSER.ZIP'
+        - a quoted full-qualified library and member name like 'IBMUSER.ZIPS(A)'
+        - absolute path, like /u/ibmuser/z.zip
+
+Usage:
+        LZ may be used as a primary command as well as a line command on
+        the data set list (panel ISRUDSL0), member list (panel ISRUDSM)
+        and file list (panel ISRUUDL0).
+
+Supported line commands:
+        B - browse archive file
+        V - view archive file
+        E - invoke edit for archive file (archive not changed after exit!)
+
+Supported primary commands:
+        FIND - search archive list for a specified target case insensitively
+        SORT - sort archive file list on name, size or date
+
+Required:
+        UNZIP 5.52 should be available. Load library LZ.LOADLIB included,
+        delivered as member LZLOAD. If you do not have UNZIP 5.52 available,
+        please restore delivered library to userid.LZ.LOADLIB:
+        RECEIVE INDATASET(FILE941(LZLOAD))
+        LZ issues LIBDEF ISPLLIB against userid.LZ.LOADLIB. If you have
+        UNZIP available on the standard search libraries, please assign
+        variable ispllib to blank.

@@ -1,0 +1,53 @@
+2023-08-06 08:35:17.811155 - Initialized conversion of CBT941
+2023-08-06 08:35:18.302485 - Received CBT.V505.FILE941.PDS from FILE941.XMI 
+2023-08-06 08:35:18.305055 - Found $$$#DATE.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/$$$#DATE
+2023-08-06 08:35:18.306057 - Found $$NOTE00.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/$$NOTE00
+2023-08-06 08:35:18.307010 - Found $$NOTE01.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/$$NOTE01
+2023-08-06 08:35:18.307961 - Found $$NOTE02.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/$$NOTE02
+2023-08-06 08:35:18.308788 - Found $$NOTE03.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/$$NOTE03
+2023-08-06 08:35:18.309740 - Found $$NOTE04.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/$$NOTE04
+2023-08-06 08:35:18.310643 - Found @FILE941.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/@FILE941
+2023-08-06 08:35:18.311847 - Found AMBLIST.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/AMBLIST
+2023-08-06 08:35:18.313443 - Found AMBLIST#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/AMBLIST#
+2023-08-06 08:35:18.314431 - Found CSV2ISP.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/CSV2ISP
+2023-08-06 08:35:18.315441 - Found CSV2ISP#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/CSV2ISP#
+2023-08-06 08:35:18.316359 - Found CSV2ISPJ.jcl (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/CSV2ISPJ
+2023-08-06 08:35:18.317261 - Found CSV2ISPP.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/CSV2ISPP
+2023-08-06 08:35:18.318304 - Found DDL.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/DDL
+2023-08-06 08:35:18.319365 - Found DDL#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/DDL#
+2023-08-06 08:35:18.320275 - Found DELINK.jcl (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/DELINK
+2023-08-06 08:35:18.321179 - Found DELINK#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/DELINK#
+2023-08-06 08:35:18.322211 - Found FEEDBACK.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/FEEDBACK
+2023-08-06 08:35:18.323179 - Found FEEDBCK#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/FEEDBCK#
+2023-08-06 08:35:18.489598 - Found HTML.xmi (application/xmit) in CBT.V505.FILE941.PDS
+2023-08-06 08:35:18.505050   - Received to CBT941/FILE941.HTM
+2023-08-06 08:35:18.506093 - Found ISPCS#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISPCS#
+2023-08-06 08:35:18.507031 - Found ISPCSBAT.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISPCSBAT
+2023-08-06 08:35:18.508020 - Found ISPCSJCL.jcl (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISPCSJCL
+2023-08-06 08:35:18.508931 - Found ISP2CSV.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISP2CSV
+2023-08-06 08:35:18.509916 - Found ISP2CSV#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISP2CSV#
+2023-08-06 08:35:18.510840 - Found ISP2CSVJ.jcl (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISP2CSVJ
+2023-08-06 08:35:18.511862 - Found ISP2CSVP.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/ISP2CSVP
+2023-08-06 08:35:18.512810 - Found LA.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LA
+2023-08-06 08:35:18.513787 - Found LA#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LA#
+2023-08-06 08:35:18.514677 - Found LISTCS.jcl (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LISTCS
+2023-08-06 08:35:18.515661 - Found LISTCS#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LISTCS#
+2023-08-06 08:35:18.516583 - Found LISTIDR.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LISTIDR
+2023-08-06 08:35:18.517503 - Found LISTLOAD.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LISTLOAD
+2023-08-06 08:35:18.518378 - Found LISTOBJ.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LISTOBJ
+2023-08-06 08:35:18.518387 - Found LOADISPF.bin containing application/octet-stream, moved to PDS/LOADISPF
+2023-08-06 08:35:18.520265 - Found LOADISPL.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LOADISPL
+2023-08-06 08:35:18.521234 - Found LZ.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LZ
+2023-08-06 08:35:18.522219 - Found LZ#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/LZ#
+2023-08-06 08:35:18.522227 - Found LZLOAD.x-mp4a-latm containing audio/x-mp4a-latm, moved to PDS/LZLOAD
+2023-08-06 08:35:18.524479 - Found RESIZE.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/RESIZE
+2023-08-06 08:35:18.525367 - Found RESIZE#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/RESIZE#
+2023-08-06 08:35:18.526333 - Found RXGIM.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/RXGIM
+2023-08-06 08:35:18.527294 - Found RXGIM#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/RXGIM#
+2023-08-06 08:35:18.528245 - Found RXGIM@.jcl (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/RXGIM@
+2023-08-06 08:35:18.539137 - Found RXGLOAD.xmi (application/xmit) in CBT.V505.FILE941.PDS
+2023-08-06 08:35:18.545185   - Received RECFM=U data, stored XMIT file as CBT941/RXGLOAD.xmi
+2023-08-06 08:35:18.545218 - Found SCT.bin containing application/octet-stream, moved to PDS/SCT
+2023-08-06 08:35:18.547226 - Found SCT#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/SCT#
+2023-08-06 08:35:18.548111 - Found TRAP.rexx (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/TRAP
+2023-08-06 08:35:18.549010 - Found TRAP#.txt (text/plain) in CBT.V505.FILE941.PDS, moved to PDS/TRAP#

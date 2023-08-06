@@ -1,0 +1,101 @@
+Function:
+ 	Reallocate space for existing data set, existing data may be kept. Also
+        can convert PDS to PDSE and vice versa, update record format, record
+        length, block size, expiration date.
+
+Syntax:
+        RESIZE dsname
+
+Usage:
+  	RESIZE may be used as a command on ISPF =6 or on COMMAND prompt, but most
+        convenient is a use as a line command on ISPF =3.4 panel:
+
+   Menu  Options  View  Utilities  Compilers  Help
+ ------------------------------------------------------------------------------
+ DSLIST - Data Sets Matching IBMUSER                                Row 1 of 23
+
+ Command - Enter "/" to select action                  Message           Volume
+ -------------------------------------------------------------------------------
+          IBMUSER.BRODCAST                                               Z13CAT
+          IBMUSER.CBTXXX.FILEXXX                                         WORK01
+          IBMUSER.CBTXXX.HTMLXXX                                         WORK01
+          IBMUSER.CLIST                                                  Z13CAT
+          IBMUSER.CP273.TEXT                                             Z13CAT
+ resize   IBMUSER.CP880.TEXT                                             Z13CAT
+          IBMUSER.CPYRIGHT                                               WORK01
+          IBMUSER.DSSU                                                   USER01
+          IBMUSER.DUMMY.XML                                              USER01
+          IBMUSER.EXEC.RACF.CLIST                                        Z13CAT
+          IBMUSER.EXPORT                                                 USER01
+          IBMUSER.HFS                                                    Z13CAT
+          IBMUSER.ISPF.ISPPROF                                           Z13CAT
+          IBMUSER.LOG.MISC                                               Z13CAT
+          IBMUSER.PMA                                                    Z13CAT
+ Command ===>                                                  Scroll ===> PAGE
+  F1=Help    F2=Split   F3=Exit    F5=Rfind   F7=Up      F8=Down    F9=Swap
+ F10=Left   F11=Right  F12=Cancel
+
+
+the following pop-up window appears:
+
+   Menu  Options  View  Utilities  Compilers  Help
+ ------------------------------------------------------------------------------
+ DSLIST - Data Sets Matching IBMUSER                                Row 1 of 23
+
+ Command - Enter "/" to select action                  Message           Volume
+ ------- ------------------------- Resize Facility ------------------------^ ---
+         ¦ COMMAND ===>                                                    ¦ AT
+         ¦ IBMUSER.CP880.TEXT                                              ¦ 01
+         ¦                                                    More:     +  ¦ 01
+         ¦ Keep data  . . . . . Y        Submit job  . . . . . N           ¦ AT
+         ¦                                                                 ¦ AT
+ resize  ¦ Organization . . . . PS       Creation date . . . . 2016/133    ¦ AT
+         ¦ Record format  . . . FB       Space units . . . . . TRACK       ¦ 01
+         ¦ Record length  . . . 80       Primary quantity  . . 1           ¦ 01
+         ¦ Block size . . . . . 32000    Secondary quantity  . 60          ¦ 01
+         ¦ Data set name type .          Directory blocks  . .             ¦ AT
+         ¦ Management class . .          Volume serial . . . . Z13CAT      ¦ 01
+         ¦ Storage class  . . .          Device type . . . . . 3390        ¦ AT
+         ¦ Data class . . . . .          Expiration date . . .             ¦ AT
+         ¦                                                                 ¦ AT
+         ¦ Current Allocation            Current Utilization               ¦ AT
+         ¦                                                                 ¦ AT
+ Command ¦  F1=HELP     F2=SPLIT    F3=END      F4=RETURN   F5=RFIND       ¦ GE
+  F1=Hel ¦  F6=RCHANGE  F7=UP       F8=DOWN     F9=SWAP    F10=LEFT        ¦
+ F10=Lef L------------------------------------------------------------------
+
+You can type over values highlighted and press enter key. A new data set with
+unique name would be allocated, then data would be copied from old data set to
+the new unless "Keep data" option is "N". When data sucessfully copied and
+original data set would be deleted and new allocated one renamed to an original
+name.
+
+An original record format (RECFM) as well as record length (LRECL) and block
+size (BLKSIZE) may be changed. However, be careful: RESIZE does NOT prevent data
+truncation, so you should understand what you do. For example, if you change
+RECFM=V,LRECL=255 to RECFM=F,LRECL=80 data truncation may occurs if there are
+records longer than 80.
+
+Data set reallocation could be started immediately or performed via generated
+job (if option "Submit job" set to "Y"). The last choice may be useful for a
+huge data sets or libraries, where copy process may take several minutes.
+Volume serial and device type provided for antique z/OS predecessors.
+
+In general, resize is a handy equivalent of the following standard ISPF
+functions (4-in-1):
+
+    ISPF 3.2;A allocate new data set with sugessted attributes;
+    ISPF 3.3;C copy data from existing data set to new one;
+    ISPF 3.2;D delete existing (old) data set;
+    ISPF 3.3;R rename new created data set to old name;
+
+RESIZE may be especially useful to resolve E37, D37 system abend - an existing
+data set may be easily reallocated to provide free space.
+
+Notes:
+
+    - Do not use "Keep data" option against just allocated sequential data set.
+    Attempt to copy data from such data set would fail with "No record found"
+    or "wrong length record" condition.
+    - Do not use "resize" against data set in use, for instance, allocated by
+    your TSO LOGON procedure.

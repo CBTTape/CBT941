@@ -1,0 +1,96 @@
+//IBMUSER# JOB MSGCLASS=H,NOTIFY=&SYSUID
+//IEBUPDTE EXEC PGM=IEBUPDTE,PARM=NEW
+//SYSPRINT DD  DUMMY
+//SYSUT2   DD  DSN=&&REXX,UNIT=SYSDA,DISP=(MOD,PASS,DELETE),
+//             SPACE=(1024,(50,20,1)),
+//             DCB=(DSORG=PO,LRECL=80,BLKSIZE=12320)
+//SYSIN    DD  *
+./ ADD NAME=GIMAPI
+ /* REXX/370 MVS/TSO */
+
+ /* Query all DDDEFs */
+ HLQ = 'RXGIM'
+ RXGIM.CSI = 'DB2.V11R1.CSI'
+ RXGIM.ZONE = '*'
+ RXGIM.ENTRY = 'DDDEF'
+ RXGIM.SUBENTRY = '*' /* DATASET,PATH,VOLUME */
+ RXGIM.FILTER = ''
+ address linkmvs 'RXGIM'
+ call Show_results
+ call Show_errors
+ call Show_entries
+
+ /* Query particular DDDEF in specified zone */
+ HLQ = 'RXGIM'
+ RXGIM.CSI = 'DB2.V11R1.CSI'
+ RXGIM.ZONE = 'DB2DZ'
+ RXGIM.ENTRY = 'DDDEF'
+ RXGIM.SUBENTRY = '*' /* DATASET,PATH,VOLUME */
+ RXGIM.FILTER = "ENAME='ADSNBASE'"
+ address linkmvs 'RXGIM'
+ call Show_results
+ call Show_errors
+ call Show_entries
+
+ /* Query particular DDDEF in all zones */
+ HLQ = 'RXG'
+ RXG.CSI = 'DB2.V11R1.CSI'
+ RXG.ZONE = '*'
+ RXG.ENTRY = 'DDDEF'
+ RXG.SUBENTRY = '*' /* DATASET,PATH,VOLUME */
+ RXG.FILTER = "ENAME='ADSNBASE'"
+ address linkmvs 'RXGIM RXG'
+ call Show_results
+ call Show_errors
+ call Show_entries
+
+ /* Query unexisted DDDEF in all zones */
+ HLQ = 'RXGIM'
+ RXGIM.CSI = 'DB2.V11R1.CSI'
+ RXGIM.ZONE = '*'
+ RXGIM.ENTRY = 'DDDEF'
+ RXGIM.SUBENTRY = '*' /* DATASET,PATH,VOLUME */
+ RXGIM.FILTER = "ENAME='YYIJ'"
+ address linkmvs 'RXGIM'
+ call Show_results
+ call Show_errors
+ call Show_entries
+ exit
+
+ Show_results:
+   say 'RXGIM completed 'rc
+   say hlq'.REASON: 'value(hlq'.REASON')
+   say hlq'.VERSION: 'value(hlq'.VERSION')
+   return
+
+ Show_errors:
+   say hlq'.ERROR.0: 'value(hlq'.ERROR.0')
+   do i = 1 to value(hlq'.ERROR.0')
+     say hlq'.ERROR.'i': 'value(hlq'.ERROR.'i)
+   end i
+   return
+
+ Show_entries:
+   say 'Entries:'
+   say hlq'.REPLY.0 'value(hlq'.REPLY.0')
+   do i = 1 to value(hlq'.REPLY.0')
+     say hlq'.REPLY.'i': 'value(hlq'.REPLY.'i)
+     say 'Subentries:'
+     say hlq'.REPLY.'i'.0 'value(hlq'.REPLY.'i'.0')
+     do j = 1 to value(hlq'.REPLY.'i'.0')
+       say hlq'.REPLY.'i'.'j': 'value(hlq'.REPLY.'i'.'j)
+       do k = 1 to value(hlq'.REPLY.'i'.'j'.0')
+         say hlq'.REPLY.'i'.'j'.'k': 'value(hlq'.REPLY.'i'.'j'.'k)
+       end k
+     end j
+   end i
+   return
+
+//IRXJCL   EXEC PGM=IRXJCL,PARM='GIMAPI'
+//STEPLIB  DD  DSN=IBMUSER.LINK,DISP=SHR
+//SYSPRINT DD  SYSOUT=*
+//OUTDD    DD  SYSOUT=*
+//SYSTSPRT DD  SYSOUT=*
+//SYSEXEC  DD  DSN=&&REXX,DISP=(OLD,DELETE,DELETE)
+//
+

@@ -1,0 +1,44 @@
+@echo off
+rem start ISPF C/S session
+
+rem Please uncomment the following statement if you want start WSA
+rem start wsa
+
+rem The following 4 statements must be modified to fit your environment!
+set userid=IBMUSER
+set passwd=DEC33DEC
+set host=z
+set account=MSGCLASS=H,NOTIFY=IBMUSER
+set tempjcl=IBMUSER.$$TEMP$$.JCL
+
+if $%1==$? goto help
+
+rem create FTP batch file to submit job
+echo user %userid% %passwd% > ISPCS.ftp.temp
+echo quote site filetype=seq >> ISPCS.ftp.temp
+echo quote site recfm=fb lrecl=80 blksize=32000 >> ISPCS.ftp.temp
+echo ascii >> ISPCS.ftp.temp
+echo put ISPCS.jcl %tempjcl% >> ISPCS.ftp.temp
+echo quote site filetype=jes >> ISPCS.ftp.temp
+echo get %tempjcl% ISPCS.job.output >> ISPCS.ftp.temp
+echo quote site filetype=seq >> ISPCS.ftp.temp
+echo del %tempjcl% >> ISPCS.ftp.temp
+echo quit >> ISPCS.ftp.temp
+
+rem submit job, wait for completion and get the output
+ftp -s:ISPCS.ftp.temp -n %host% > ISPCS.ftp.output
+
+rem please comment 3 following statements for debug if something does wrong
+del ISPCS.ftp.temp > NUL
+del ISPCS.ftp.output > NUL
+del ISPCS.job.output > NUL
+exit
+
+:help
+echo Function:
+echo        Start ISPF Agent (ISPF C/S) session via FTP
+echo Syntax:
+echo        ISPFA
+exit
+
+rem (C) 2005, 2021 Gregory Bliznets

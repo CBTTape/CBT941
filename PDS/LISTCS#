@@ -1,0 +1,31 @@
+Function:
+ 	This standalone job is used to objective comparison of the load or
+        program libraries.
+
+Syntax:
+        SUBMIT LISTCS
+
+Usage:
+  	This job ran LISTIDR function of AMBLIST utility against any member
+        of the specified load or program library, post-process LISTIDR output
+        using DFSORT to get a list of members and csects in a unified form:
+        MEMBER SLEEP   CSECT SLEEP     PRODUCED BY 569623400 01.04 ON 2013-02-25
+        MEMBER SLEEP   CSECT PARSLIST  PRODUCED BY 569623400 01.04 ON 2013-02-25
+        MEMBER ENCODE  CSECT ENCODE    PRODUCED BY 569623400 01.05 ON 2007-09-10
+        MEMBER TASID   CSECT TASIDPNL  PRODUCED BY 569623400 01.04 ON 2003-11-20
+        MEMBER TASID   CSECT TASIDPNL  PRODUCED BY PL/X-390  02.01 ON 2003-11-20
+
+        This list would be the same for both load and program library. Using
+        this list we can objectively compare load/program libraries to identify
+        changed modules. List sorted by date, member name, csect name, produced
+        component.
+
+        So, this comparision method do not claim false differences when
+        - load modules just copied from one library to another one (including
+          PDS to PDSE and PDSE to PDS copying)
+        - load modules rebuilt from the same OBJ/NCAL modules
+        - load modules rebuilt as a result of SMP/E APPLY from the same SYSMOD
+
+        Specify data set name to process on the line 3 of the job.
+
+

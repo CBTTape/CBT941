@@ -1,0 +1,56 @@
+
+ISPF Client/Server (ISPF C/S) session initiation with one click
+
+Function:
+    Initiate ISPF C/S session with single click on Windows icon, without
+    entering any data and without any 3270 emulator at all
+
+Description
+    Standard method to start ISPF C/S session as described in manuals:
+    - Open terminal session using any 3270 terminal emulator (IBM Personal
+      Communication, Rocket Bluezone, wc3270, OnNet Host Suite, Cygwin c3270
+      x3270, qws3270 etc.).
+    - Under ISPF call "Options" panel (=0). "General Setting" panel appears.
+    - Pull "Workstation" menu and enter option 1, "Initiate Workstation
+      Connection" window appears
+    - Fill required data (most important here is workstation IP address),
+      then press "enter" key. ISPF C/S session initiated.
+
+Disadvantages
+    Terminal session used to initiate ISPF C/S remains active and cannot be
+    closed, otherwise ISPF C/S session fails. As a result of that userid used
+    for TSO logon is busy and you cannot open another 3270 session using the
+    same userid.
+    Another problem is workstation IP address, which may be changed (it is
+    almost always changed when you connected to z/OS host via VPN).
+
+Proposed method
+    Tune delivered files and initiate ISPF C/S session with single click on
+    Windows icon, without entering any data and without any 3270 emulator at
+    all.
+    Idea is based on the z/OS FTP JES2 interface - ability to submit jobs via
+    ftp session.
+
+Installation procedure
+    - Copy ISPCSBAT to your workstation as ISPCS.bat, and ISPCSJCL as ISPCS.jcl.
+      Both ISPCSBAT and ISPCSJCL are encoded in EBCDIC, so they should be
+      transfterred in text (ascii) mode. ISPCS.bat and ISPCS.jcl should be in
+      the same Windows directory, probably the best place for both is WSA
+      installation directory.
+    - Copy WSIP to any library.
+    - Modify ISPCS.bat and ISPCS.jcl before use to reflect your environment:
+      ISPCS.bat:
+      Change userid, password and host (z/OS) name as required. If you want to
+      start WSA (Workstartion Agent) automatically, uncomment an appropriate
+      start command.
+      ISPCS.jcl:
+      Update data sets allocation as required for your installation and your
+      personal need. Please use widely known Doug Nadel's BATCHPDF to get your
+      data set allocation, or use IBM supplied TSO/ISPF command ISRDDN. Also
+      update CODEPAGE and CHARSET on ISPSTART command accordingly to your
+      local language environment (for example, countries using cyrillic rather
+      than latin may prefer CODEPAGE(1025) CHARSET(1150) to use national
+      character set).
+    - Modify ISPCS.jcl to reflect WSIP location (SYSPROC DD).
+
+Please see ISPCS.html for more details.

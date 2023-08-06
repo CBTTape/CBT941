@@ -1,0 +1,474 @@
+/* REXX */
+/*
+
+Function: full-screen zip archive list.
+
+Description: Allow process zip archive kept on the data set or
+       library member or USS file similar to the ISPF "member
+       list". Normally invoked as a line command on the data
+       set list (panel ISRUDSL0), file list (panel ISRUUDL0)
+       or member list (panel ISRUDSM).
+
+Supported line commands:
+       B - browse file
+       V - view file
+       E - edit file (archive not changed!)
+
+Supported primary commands:
+       SORT column - sort table by specified column
+       FIND string - search in the list case insensitive.
+
+Required: UNZIP 5.52 should be available either on standard search,
+       or taken from delivered userid.LZ.LOADLIB.
+
+Note:
+       This code contains inline ISPF elements (panels, skels)
+
+(C) 2019-2021 Gregori Bliznets GregoryTwin@gmail.com
+
+*/
+trace off
+/* replace to ispllib='' if unzip available on standard search libraries */
+ispllib = userid()'.LZ.LOADLIB'
+parse source . . myid . . . . ispf .
+if ispf <> 'ISPF'
+then do
+  say myid' should run under ISPF'
+  exit 20
+  end
+parse arg zip
+zip = strip(zip)
+zip = strip(zip, 'B', "'") /* remove quotes */
+if zip = ''
+then do
+  zedsmsg = 'Parameter is missed'
+  zedlmsg = 'Dataset or path is missed. Use LZ as a line command'
+  address ISPEXEC 'SETMSG MSG(ISRZ001)'
+  exit 8
+  end
+if ispllib <> ''
+then do
+  if sysdsn("'"ispllib"'") <> 'OK'
+  then do
+    zedsmsg = 'UNZIP not available'
+    zedlmsg = 'Dataset 'ispllib' is missed, UNZIP program unavailable'
+    address ISPEXEC 'SETMSG MSG(ISRZ001)'
+    exit 8
+    end
+  end
+rc = LoadISPF()
+if rc <> 0
+then exit rc
+/* Temporarily use my private library */
+if ispllib <> ''
+then address ISPEXEC "LIBDEF ISPLLIB DATASET ID('"ispllib"') STACK"
+call Free
+if left(zip, 1) = "/"
+then "ALLOC FI(STDIN) PATH('"zip"')"
+else "ALLOC FI(STDIN) DSN('"zip"') SHR"
+cc = rc
+if cc <> 0
+then do
+  zedlmsg = 'ALLOCATE failed with return code 'cc
+  zedsmsg = 'ALLOC failed: 'cc
+  address ISPEXEC 'SETMSG MSG(ISRZ001)'
+  signal quit
+  end
+'ALLOC FI(STDOUT) UNIT(VIO) SP(10 10) TRACKS'
+'EXECIO 1 DISKR STDIN (STEM DATA. FINIS'
+if left(data.1, 2) <> '504B'x /* ZIP signature */
+then do
+  zedlmsg = 'Unexpected signature' c2x(left(data.1,2))
+  zedsmsg = 'Not a ZIP archive'
+  address ISPEXEC 'SETMSG MSG(ISRZ001)'
+  signal quit
+  end
+parm = '-l DD:STDIN >DD:STDOUT'
+call outtrap 'TSO.'
+address LINKMVS 'UNZIP PARM'
+cc = rc
+call outtrap 'OFF'
+select
+when cc < 0
+then do /* It really mean abend, like S213 on open SYSIN */
+  zedlmsg = 'UNZIP failed with system completion code 'd2x(abs(cc))
+  zedsmsg = 'UNZIP failed: 'd2x(abs(cc))
+  address ISPEXEC 'SETMSG MSG(ISRZ001)'
+  cc = 20
+  signal quit
+  end
+when cc > 0
+then do
+  zedsmsg = 'UNZIP failed with return code 'cc
+  zedrmsg = 'UNZIP failed: 'cc
+  address ISPEXEC 'SETMSG MSG(ISRZ001)'
+  signal quit
+  end
+otherwise nop
+end
+'EXECIO * DISKR STDOUT (STEM LIST. FINIS'
+address ISPEXEC
+'VPUT (ZIP) SHARED'
+'TBCREATE FLIST NAMES(FNAME FTIME FDATE FSIZE) NOWRITE REPLACE'
+do i = 4 to list.0-2
+  parse var list.i fsize fdate ftime fname
+  fname = strip(fname)
+  'TBADD FLIST'
+end i
+'TBTOP FLIST'
+call sort 'NAME'
+/* Display file list and allow the user browse/edit/view files */
+ztdsels = 0
+do forever
+  panel = ''
+  if ztdsels = 0
+  then panel = 'PANEL(FLIST)'
+  'TBDISPL FLIST 'panel
+  if rc > 4
+  then leave
+  if translate(zcmd) = 'EXIT'
+  then leave
+  if ztdsels > 0
+  then do /* process line commands */
+    zmsg = ''
+    fcmd = strip(fcmd, 'B', '_')
+    select
+    when fcmd = ''
+    then iterate
+    when pos(translate(fcmd),'BEV') > 0 /* Browse, Edit, View */
+    then do
+      parm = '-p DD:STDIN 'fname' >DD:STDOUT'
+      call outtrap 'TSO.'
+      address LINKMVS 'UNZIP PARM'
+      fscr = zscr /* keep zscr before BROWSE */
+      'LMINIT DATAID($$LZ$$) DDNAME(STDOUT)'
+      select
+      when translate(fcmd) = 'B'
+      then 'BROWSE DATAID('$$LZ$$')'
+      when translate(fcmd) = 'E'
+      then 'EDIT DATAID('$$LZ$$')'
+      when translate(fcmd) = 'V'
+      then 'VIEW DATAID('$$LZ$$')'
+      end
+      zscr = fscr /* restore zscr */
+      'LMFREE DATAID('$$LZ$$')'
+      fcmd = ''
+      end
+    otherwise zmsg = 'Invalid command: 'fcmd
+    end
+    ztdsels = ztdsels - 1
+  end
+  if zcmd <> ''
+  then do /* process command line */
+    zmsg = ''
+    select
+    when translate(word(zcmd, 1)) = 'SORT'
+    then do
+      parse var zcmd . fcol .
+      call sort fcol
+      end
+    when abbrev('FIND',translate(word(zcmd, 1)),1) = 1
+    then do
+      parse var zcmd . farg .
+      call find farg
+      end
+    otherwise
+      zmsg = 'Invalid command: 'zcmd
+    end
+    end
+  if fsort <> ''
+  then call sort fsort
+end
+'TBEND FLIST'
+if ispllib <> ''
+then 'LIBDEF ISPLLIB'
+cc = 0
+
+quit:
+  rc = QuitISPF()
+  call Free
+  exit cc
+
+sort:
+  parse arg fcol
+  fcols = 'NAME SIZE DATE TIME'
+  tcols = 'C    N    C    C   '
+  p = wordpos(translate(fcol), fcols)
+  if p > 0
+  then do
+    'TBSORT FLIST FIELDS(F'word(fcols, p)','word(tcols, p)')'
+    'TBTOP FLIST'
+    end
+  else zmsg = 'Invalid sort column: 'fcol
+  return
+
+find:
+  'TBTOP FLIST'
+  found = 0
+  do until rc <> 0
+    'TBSKIP FLIST'
+    if pos(translate(farg), translate(fname)) > 0
+    then do
+      found = 1
+      leave
+      end
+  end
+  if found = 0
+  then zmsg = 'Not found: 'farg
+  return
+
+/* Free all used DD silently */
+Free:
+  call outtrap 'NIL.'
+  address TSO 'FREE FI(STDIN STDOUT)'
+  call outtrap 'OFF'
+  return
+
+/* Load ISPF elements that are inline in the REXX source code (lite version) */
+LoadISPF:
+  dataid = ''
+  address TSO
+  call outtrap 'NIL.'
+  'FREE FI($$ISPF$$)'
+  'ALLOC FI($$ISPF$$) UNIT(VIO) SPACE(5,5) DIR(1)' ,
+    'LRECL(80) RECFM(F B) BLKSIZE(0)'
+  call outtrap 'OFF'
+  address ISPEXEC
+  'CONTROL ERRORS RETURN'
+  'LMINIT DATAID(DATAID) DDNAME($$ISPF$$)'
+  'LMOPEN DATAID('dataid') OPTION(OUTPUT)'
+  keys = 'START PANEL MSG SKEL END'
+  drop data.
+  data.0 = 0
+  found = 0
+  do i = sourceline() to 1 by -1
+    s = sourceline(i)
+    parse upper var s 1 ?? +2 keyword name .
+    select
+    when ?? = './'
+    then do
+      n = wordpos(keyword, keys)
+      select
+      when n = 0
+      then signal quit /* unknown marker */
+      when n = 1
+      then leave i /* top marker */
+      when n = words(keys)
+      then found = 1 /* bottom marker */
+      otherwise /* marker found */
+        if name = ''
+        then signal quit /* Name is missed */
+        if data.0 = 0
+        then iterate i /* empty element */
+        do n = data.0 to 1 by -1
+          s = data.n
+          'LMPUT DATAID('dataid') MODE(INVAR) DATALOC(S) DATALEN(80)'
+        end n
+        'LMMADD DATAID('dataid') MEMBER('name')'
+        drop data.
+        data.0 = 0
+      end
+      end
+    when found = 0
+    then iterate i
+    otherwise /* data element */
+      n = data.0+1
+      data.n = s
+      data.0 = n
+    end
+  end i
+  'LMCLOSE DATAID('dataid')'
+  'LMFREE DATAID('dataid')'
+  'LIBDEF ISPPLIB LIBRARY ID($$ISPF$$) STACK'
+  'LIBDEF ISPMLIB LIBRARY ID($$ISPF$$) STACK'
+  'LIBDEF ISPSLIB LIBRARY ID($$ISPF$$) STACK'
+  dataid = ''
+  return 0
+
+QuitISPF:
+  address ISPEXEC
+  'CONTROL ERRORS RETURN'
+  if dataid <> ''
+  then do
+    'LMCLOSE DATAID('dataid')'
+    'LMFREE DATAID('dataid')'
+     end
+  'LIBDEF ISPPLIB'
+  'LIBDEF ISPMLIB'
+  'LIBDEF ISPSLIB'
+  call outtrap 'NIL.'
+  address TSO 'FREE FI($$ISPF$$)'
+  call outtrap 'OFF'
+  return 0
+
+/* Inline ISPF elements follow:
+./START
+./PANEL FLIST
+)PANEL
+)ATTR
+  @ TYPE(AB)
+  % TYPE(ABSL)   GE(ON)
+  \ TYPE(PS)
+  ~ TYPE(NT)
+  # TYPE(OUTPUT) INTENS(LOW)  COLOR(GREEN)
+  + TYPE(TEXT)   INTENS(LOW)  COLOR(GREEN)
+  * TYPE(TEXT)   INTENS(LOW)  COLOR(TURQUOISE)
+  ? TYPE(INPUT)  INTENS(HIGH) COLOR(WHITE)     CAPS(ON)
+  _ TYPE(INPUT)  INTENS(HIGH) COLOR(TURQUOISE) CAPS(ON)  PAD(_)
+  ! TYPE(OUTPUT) INTENS(LOW)  COLOR(TURQUOISE) CAPS(OFF)
+  ¬ TYPE(OUTPUT) INTENS(HIGH) COLOR(YELLOW)    CAPS(OFF)
+  < TYPE(OUTPUT) INTENS(LOW)  COLOR(BLUE)      CAPS(OFF)
+)ABC DESC('Menu') MNEM(1)
+PDC DESC('Settings') UNAVAIL(ZPM1) MNEM(1) ACC(CTRL+S)
+ ACTION RUN(ISRROUTE) PARM('SET')
+PDC DESC('View') UNAVAIL(ZPM2) MNEM(1) ACC(CTRL+V)
+ ACTION RUN(ISRROUTE) PARM('BR1')
+PDC DESC('Edit') UNAVAIL(ZPM3) MNEM(1) ACC(CTRL+E)
+ ACTION RUN(ISRROUTE) PARM('ED1')
+PDC DESC('ISPF Command Shell') UNAVAIL(ZPM4) MNEM(6) ACC(CTRL+C)
+ ACTION RUN(ISRROUTE) PARM('C1')
+PDC DESC('Dialog Test...') UNAVAIL(ZPM5) MNEM(8) ACC(CTRL+T)
+ ACTION RUN(ISRROUTE) PARM('DAL')
+PDC DESC('Other IBM Products...') UNAVAIL(ZPM6) MNEM(1) ACC(CTRL+O)
+ ACTION RUN(ISRROUTE) PARM('OIB')
+PDC DESC('SCLM') UNAVAIL(ZPM7) MNEM(3) ACC(CTRL+L)
+ ACTION RUN(ISRROUTE) PARM('SCL')
+PDC DESC('ISPF Workplace') UNAVAIL(ZPM8) MNEM(6) ACC(CTRL+W)
+ ACTION RUN(ISRROUTE) PARM('WRK')
+PDC DESC('Status Area...') UNAVAIL(ZPMS) MNEM(8) ACC(CTRL+A)
+ ACTION RUN(ISRROUTE) PARM('SAM')
+PDC DESC('Exit') MNEM(2) PDSEP(ON) ACC(CTRL+X) ACTION RUN(EXIT)
+)ABCINIT
+.ZVARS=ISR@OPT
+)ABC DESC('Utilities') MNEM(1)
+PDC DESC('Library') UNAVAIL(ZUT1) MNEM(1) ACC(ALT+1)
+ ACTION RUN(ISRROUTE) PARM('U1')
+PDC DESC('Data set') UNAVAIL(ZUT2) MNEM(1) ACC(ALT+2)
+ ACTION RUN(ISRROUTE) PARM('U2')
+PDC DESC('Move/Copy') UNAVAIL(ZUT3) MNEM(1) ACC(ALT+3)
+ ACTION RUN(ISRROUTE) PARM('U3')
+PDC DESC('Data Set List') UNAVAIL(ZUT4) MNEM(2) ACC(ALT+4)
+ ACTION RUN(ISRROUTE) PARM('U4')
+PDC DESC('Reset Statistics') UNAVAIL(ZUT5) MNEM(5) ACC(ALT+5)
+ ACTION RUN(ISRROUTE) PARM('U5')
+PDC DESC('Hardcopy') UNAVAIL(ZUT6) MNEM(1) ACC(ALT+6)
+ ACTION RUN(ISRROUTE) PARM('U6')
+PDC DESC('Download...') UNAVAIL(ZUTDT) MNEM(2) ACC(ALT+7)
+ ACTION RUN(ISRROUTE) PARM('UDT')
+PDC DESC('Outlist') UNAVAIL(ZUT7) MNEM(2) ACC(ALT+8)
+ ACTION RUN(ISRROUTE) PARM('U8')
+PDC DESC('Commands...') UNAVAIL(ZUT8) MNEM(1) ACC(ALT+9)
+ ACTION RUN(ISRROUTE) PARM('U9')
+PDC DESC('Reserved') UNAVAIL(ZUT9) MNEM(6) ACTION RUN(ISRROUTE) PARM('U10')
+PDC DESC('Format') UNAVAIL(ZUT10) MNEM(1) ACC(ALT+F1)
+ ACTION RUN(ISRROUTE) PARM('U11')
+PDC DESC('SuperC') UNAVAIL(ZUT11) MNEM(1) PDSEP(ON) ACC(CTRL+F2)
+ ACTION RUN(ISRROUTE) PARM('U12')
+PDC DESC('SuperCE') UNAVAIL(ZUT12) MNEM(3) ACC(CTRL+F3)
+ ACTION RUN(ISRROUTE) PARM('U13')
+PDC DESC('Search-For') UNAVAIL(ZUT13) MNEM(2) ACC(CTRL+F4)
+ ACTION RUN(ISRROUTE) PARM('U14')
+PDC DESC('Search-ForE') UNAVAIL(ZUT14) MNEM(4) ACC(CTRL+F5)
+ ACTION RUN(ISRROUTE) PARM('U15')
+PDC DESC('Table Utility') UNAVAIL(ZUT15) MNEM(3) ACC(CTRL+F6)
+ ACTION RUN(ISRROUTE) PARM('U16')
+PDC DESC('Directory List') UNAVAIL(ZUT16) MNEM(2) ACC(CTRL+F7)
+ ACTION RUN(ISRROUTE) PARM('U17')
+)ABCINIT
+.ZVARS=PDFUTIL
+     &zut9 = '1'
+)ABC DESC('Compilers') MNEM(1)
+PDC DESC('Foreground Compilers') MNEM(1) ACTION RUN(ISRROUTE) PARM('FGD')
+PDC DESC('Background Compilers') MNEM(1) ACTION RUN(ISRROUTE) PARM('BKG')
+PDC DESC('ISPPREP Panel Utility...') MNEM(1) ACTION RUN(ISPPREP)
+PDC DESC('DTL Compiler...') MNEM(1) ACTION RUN(ISPDTLC)
+)ABCINIT
+.ZVARS=ISRLANG
+)ABC DESC('Help') MNEM(1)
+PDC DESC('LZ commands') ACTION RUN(ISRROUTE)
+ PARM('SELECT PANEL(LZH) ADDPOP')
+PDC DESC('About LZ') MNEM(1) ACTION RUN(ISRROUTE)
+ PARM('SELECT PANEL(LZA) ADDPOP')
+)ABCINIT
+.ZVARS=LZH
+)BODY EXPAND(//)
+~@ Menu@ Utilities@ Compilers@ Help+
+%--/-/-------------------------------------------------------------------------
++LZ     !ZIP                                                   +
++Command ===>_ZCMD                                             +Scroll ==>_ZSCR
+¬ZMSG                                                          +
+*       \Name                                          \Size    \Date    *Time
+)MODEL
+_Z      <Z                                             #Z       #Z       #Z
+)INIT
+  .ZVARS = '(FCMD FNAME FSIZE FDATE FTIME)'
+  .CURSOR = FCMD
+  VGET (ZIP ZSCR) SHARED
+  &ZTDMARK = ''
+  &ZSCR = 'CSR'
+  &FCMD = ''
+  &ZCMD = ''
+  &FSORT = ''
+)REINIT
+  &FSORT = ''
+)PROC
+  &PFKEY = .PFKEY
+)PNTS
+FIELD(ZPS00001) VAR(FSORT) VAL(NAME)
+FIELD(ZPS00002) VAR(FSORT) VAL(SIZE)
+FIELD(ZPS00003) VAR(FSORT) VAL(DATE)
+FIELD(ZPS00004) VAR(FSORT) VAL(TIME)
+)END
+./PANEL LZH
+)ATTR
+ + TYPE(TEXT) INTENS(LOW)
+ % TYPE(TEXT) INTENS(HIGH) COLOR(WHITE)
+ @ TYPE(TEXT) INTENS(HIGH) COLOR(WHITE) HILITE(REVERSE)
+ _ TYPE(INPUT) INTENS(HIGH) COLOR(WHITE) JUST(LEFT)
+ ¬  TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) COLOR(YELLOW) JUST(LEFT)
+)BODY EXPAND (¦¦)
+@ ¦ ¦ LZ: List ZIP archive  ¦ ¦
+%Command ===>_ZCMD                                                     +
+¬ZMSG                                                                          +
++ Purpose:
++    LZ view content of ZIP archives
++
++ Syntax:
++    LZ archive
++    where archive is:
++    - a quoted full-qualified data set name like 'IBMUSER.ZIP'
++    - a quoted full-qualified library and member name like 'IBMUSER.ZIPS(Z1)'
++    - absolute path, like /u/ibmuser/z.zip
++    LZ may be used as a primary command as well as a line command on
++    the data set list, member list and file list panels.
++
++ Supported line commands:
++    B - browse archive file
++    V - view archive file
++    E - invoke edit for archive file (archive not changed after exit!)
++
++ Supported primary commands:
++    FIND - search archive list for a specified target case insensitively
++    SORT - sort archive file list on name, size or date
+)PROC
+ &ZSEL = 1
+)END
+./PANEL LZA
+)ATTR
+ + TYPE(TEXT) INTENS(LOW)
+ % TYPE(TEXT) INTENS(HIGH) COLOR(WHITE)
+ _ TYPE(INPUT) INTENS(HIGH) COLOR(WHITE) JUST(LEFT)
+ ¬ TYPE(OUTPUT) INTENS(HIGH) CAPS(OFF) COLOR(YELLOW) JUST(LEFT)
+ ! TYPE(TEXT) INTENS(HIGH) COLOR(WHITE) HILITE(REVERSE)
+)BODY EXPAND (¦¦) WINDOW(70,10)
+! ¦ ¦ About LZ  ¦ ¦
+%Command ===>_ZCMD                                      +
+¬ZMSG                                                   +
++
++ (C) 2006-2021 Gregori Bliznets GregoryTwin@gmail.com
++
+)PROC
+ &ZSEL = 1
+)END
+./END
+*/
