@@ -1,0 +1,337 @@
+/* REXX/370 */
+/*
+
+Description:
+       Load ISPF elements that are inline in the REXX source code.
+       The inline ISPF elements are: ISPF messages, panels and
+       skeletons. "lite" version.
+
+Function:
+       Load ISPF elements that are inline in the REXX source code.
+
+Syntax:
+       LoadISPF(Ýcontrol¨)
+       QuitISPF(feedback)
+
+Parameters:
+       control - inline ISPF elements flagged by given flag, default is ./
+       feedback - data returned by LoadISPF()
+
+Example:
+       Code must be imbedded in calling procedure:
+       <your code>
+       parse value LoadISPF() with rc feedback
+       if rc <> 0 then <your code>
+       <your code>
+       rc = QuitISPF(feedback)
+       <your code>
+       /*
+       ./start of inline elements
+       ./panel panel1
+       <panel body>
+       ./panel panel2
+       <panel body>
+       ./msg msg1
+       <message body>
+       ./msg msg2
+       <message body>
+       ./end of inline elements
+       */
+
+Usage notes:
+       1. Take code between marks
+          /* -- Cut Here -- Cut Here ... -- Cut Here -- */
+          and imbed it to your REXX rocedure.
+       2. Call to LoadISPF() returns the string consists of several tokens.
+          The first is return code, the following - feedback info, which need
+          to be kept and passed to QuitISPF() call.
+       3. Call to QuitISPF() at the end of your code is mandatory.
+       4. It is strongly suggested that the inline elements be at the
+          very end of your code so that the search for them is faster.
+          because the entire REXX program is processed from the last
+          record to the first;
+       5. Also suggested to define whole inline ISPF elements as a REXX
+          comments. e.g. enclose inline elements in /* */ as shown above
+       6. REXX procedure that uses LoadISPF() can be compiled but should
+          use REXX compiler option to keep source code available.
+       7. The inline resources must start in column 1 and use the following
+          syntax:
+          ./START
+          ./PANEL name
+          ./MSG name
+          ./SKEL name
+          ./END
+       8. LoadISPF() does not issued any messages, but set a return code.
+
+History:
+       20.10.2020 Created from the "full" LoadISPF() version by
+                  Gregory Bliznets <GregoryTwin@gmail.com>.
+                  The full version is based on LoadISPF() written by
+                  Lionel B. Dyck <lionel.b.dyck@kp.org>,
+                  but completely reimplemented and enhanced (all
+                  ISPF elements supported, incl. table, CLIST, EXEC
+                  and module.
+                  "lite" version has the same functionality as
+                  Lionel B. Dyck version, it supports panel, msg
+                  and skeleton elements only.
+
+*/
+trace off
+parse value LoadISPF() with rc feedback
+if rc <> 0
+then do
+  say 'LoadISPF() fails: 'rc
+  exit rc
+  end
+address TSO
+'ALLOC FI(ISPFILE) UNIT(VIO) SP(1,1) TRACK RECFM(F) LRECL(80) BLKSIZE(80)'
+address ISPEXEC
+'SETMSG MSG(AAAA000E)'
+'DISPLAY PANEL(AMBLISTP)'
+'FTOPEN'
+'FTINCL AMBLISTS'
+'FTCLOSE'
+'LMINIT DATAID(ID) DDNAME(ISPFILE)'
+'BROWSE DATAID('id')'
+'LMFREE DATAID('id')'
+address TSO 'FREE FI(ISPFILE)'
+rc = QuitISPF(feedback)
+exit
+
+/* -- Cut Here -- Cut Here -- Cut Here -- Cut Here -- Cut Here -- Cut Here -- */
+
+/* Load ISPF elements that are inline in the REXX source code (lite version) */
+LoadISPF: procedure
+  parse upper arg control
+  if control = ''
+  then control = './'
+  address ISPEXEC
+  'CONTROL ERRORS RETURN'
+  ddlibf = 'LOADISPF'
+  lreclf = 80
+  feedback = ''
+  address TSO 'ALLOC FI('ddlibf') LRECL('lreclf') RECFM(F B) BLKSIZE(0)' ,
+              'SPACE(5,5) DIR(1) UNIT(VIO)'
+  if rc <> 0
+  then do
+    cc = 100+rc
+    signal LoadISPF_Fail
+    end
+  feedback = feedback' 'ddlibf
+  'LMINIT DATAID(idlibf) DDNAME('ddlibf')'
+  'LMOPEN DATAID('idlibf') OPTION(OUTPUT)'
+  if rc <> 0
+  then do
+    cc = 200+rc
+    signal LoadISPF_Fail
+    end
+  keys.1 = 'START' /* top marker, should be first */
+  keys.2 = 'MSG   ISPMLIB'
+  keys.3 = 'PANEL ISPPLIB'
+  keys.4 = 'SKEL  ISPSLIB'
+  keys.5 = 'END' /* bottom marker, should be last */
+  keys.0 = 5
+  do n = 1 to keys.0
+    count.n = 0
+  end n
+  data.0 = 0
+  cc = 0
+  do i = sourceline() to 1 by -1
+    line = sourceline(i)
+    parse upper var line keyword name options
+    found = 0
+    do j = 1 to keys.0
+      parse var keys.j key lib .
+      if keyword = control''key
+      then do
+        count.j = count.j + 1
+        parms.j = options
+        found = j
+        leave j
+        end
+    end j
+    n = keys.0
+    select
+    when found = 0 & count.n = 0
+    then iterate i /* data beyond the ./END, just ignore */
+    when found = 0
+    then do /* element data */
+      n = data.0 + 1
+      data.n = line
+      data.0 = n
+      end
+    /* marker found */
+    when found = keys.0
+    then do  /* bottom marker found */
+      drop data.
+      data.0 = 0
+      end
+    when count.0 = 0
+    then do /* ./END is missed */
+      cc = 901
+      leave i
+      end
+    when found = 1
+    then leave i /* top marker found */
+    when name = ''
+    then do
+      cc = 902 /* element name missed */
+      leave i
+      end
+    when data.0 = 0
+    then do
+      cc = 903 /* empty element */
+      leave i
+      end
+    otherwise /* element marker fine */
+      do n = data.0 to 1 by -1
+        s = data.n
+        'LMPUT DATAID('idlibf') MODE(INVAR) DATALOC(s) DATALEN('lreclf')'
+      end n
+      'LMMADD DATAID('idlibf') MEMBER('name')'
+      if rc <> 0
+      then do
+        cc = 900+rc
+        leave i
+        end
+      drop data.
+      data.0 = 0
+    end
+  end i
+  'LMCLOSE DATAID('idlibf')'
+  if cc <> 0
+  then signal LoadISPF_fail
+  if count.1 = 0
+  then cc = 904 /* Top marker missed */
+  n = key.0
+  if count.n > 1
+  then cc = 905 /* Too many bottom markers */
+
+LoadISPF_fail:
+  if cc <> 0
+  then do
+    call QuitISPF feedback
+    return cc
+    end
+  drop data.
+
+  /* Define the libraries */
+  do n = 2 to keys.0-1 /* Skip top and bottom markers */
+    parse var keys.n key lib .
+    'LIBDEF 'lib' LIBRARY ID('ddlibf') STACK'
+    if rc <> 0
+    then do
+      cc = 200+rc
+      signal LOadISPF_Fail
+      end
+  end n
+  return 0' 'feedback
+
+QuitISPF: procedure
+  parse arg feedback
+  address ISPEXEC 'CONTROL ERRORS RETURN'
+  call outtrap 'nil.'
+  address ISPEXEC
+  'LIBDEF ISPPLIB'
+  'LIBDEF ISPSLIB'
+  'LIBDEF ISPMLIB'
+  do while feedback <> ''
+    parse var feedback dd feedback
+    address TSO 'FREE FI('dd')'
+  end
+  call outtrap 'off'
+  return 0
+
+/* -- Cut Here -- Cut Here -- Cut Here -- Cut Here -- Cut Here -- Cut Here -- */
+
+/*
+./START
+./PANEL AMBLISTP
+)ATTR
+  @ TYPE(AB)
+  % TYPE(ABSL)   GE(ON)
+  \ TYPE(PS)
+  ~ TYPE(NT)
+  * TYPE(TEXT)   INTENS(LOW)  COLOR(TURQUOISE)
+  + TYPE(TEXT)   INTENS(LOW)  COLOR(GREEN)
+  _ TYPE(INPUT)  INTENS(HIGH) COLOR(WHITE) JUST(LEFT)
+  ¬ TYPE(OUTPUT) INTENS(HIGH) COLOR(YELLOW) JUST(LEFT) CAPS(OFF)
+)BODY EXPAND(//)
+%-/-/ LOADISPF example -/-/
++Command ===>_ZCMD                                                     +
+¬ZMSG                                                                          +
++Option. . . . . . . _O+ 1 LISTIDR (List load module identification records)
++                        2 LISTLOAD XREF (Load module cross-reference)
++                        3 LISTLOAD (Load module map)
++                        4 LISTOBJ (Object module map)
++                        5 LISTLPA (Link Pack Area listing)
++
++Input
++Library . . . . . . _AMBDSN                                      +
++Member. . . . . . . _AMBMEM  +
++Volume serial . . . _AMBVOL+
++
++Output
++Space units . . . . _AMBUNIT +(TRK, CYL)
++Primary quantity. . _AMBPRI+  (In above units)
++Secondary quantity. _AMBSEC+  (In above units)
++
+)INIT
+ &ZPRIM = NO
+ .CURSOR = O
+ &O = &AMBOPT
+ IF (&AMBPRI = &Z)
+    &AMBPRI = 50
+ IF (&AMBSEC = &Z)
+    &AMBSEC = 50
+ IF (&AMBUNIT = &Z)
+    &AMBUNIT = TRK
+ IF (&O = &Z )
+    &O = &Z
+)PROC
+  VER (&O,NONBLANK)
+  VER (&O,LIST,1,2,3,4,5)
+  IF  (&O NE 5)
+    VER (&AMBDSN,NONBLANK)
+    VER (&AMBDSN,DSNAME)
+    VER (&AMBMEM,NONBLANK)
+    VER (&AMBMEM,NAME)
+  &AMBOPT = &O
+  VER (&AMBUNIT,LIST,CYL,TRK)
+  VER (&AMBPRI,NUM)
+  VER (&AMBSEC,NUM)
+  VPUT (AMBDSN AMBMEM AMBOPT AMBVOL AMBPRI AMBSEC AMBUNIT) PROFILE
+)END
+./MSG AAAA00
+AAAA000E              .TYPE=WARNING
+'Select AMBLIST function, input data and press enter'
+./SKEL AMBLISTS
+//AMBLIST JOB MSGCLASS=H
+//AMBLIST EXEC PGM=AMBLIST
+//SYSPRINT DD SYSOUT=*,SPACE=(&AMBUNIT,(&AMBPRI,&AMBSEC))
+)SEL &AMBOPT NE 5
+)SEL &AMBVOL NE &Z
+//SYSLIB   DD DISP=SHR,DSN=&AMBDSN,VOL=SER=&AMBVOL,UNIT=DASD
+)ENDSEL
+)SEL &AMBVOL EQ &Z
+//SYSLIB   DD DISP=SHR,DSN=&AMBDSN
+)ENDSEL
+)ENDSEL
+//SYSIN    DD *
+)SEL &AMBOPT EQ 1
+   LISTIDR MEMBER=&AMBMEM
+)ENDSEL
+)SEL &AMBOPT EQ 2
+   LISTLOAD MEMBER=&AMBMEM,OUTPUT=XREF
+)ENDSEL
+)SEL &AMBOPT EQ 3
+   LISTLOAD MEMBER=&AMBMEM
+)ENDSEL
+)SEL &AMBOPT EQ 4
+   LISTOBJ MEMBER=&AMBMEM
+)ENDSEL
+)SEL &AMBOPT EQ 4
+   LISTLPA
+)ENDSEL
+./END
+*/

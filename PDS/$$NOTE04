@@ -1,0 +1,49 @@
+Subject:  Contribution
+From:     Gregory Twin <gregorytwin@gmail.com>
+Date:     9/6/2021, 3:05 PM
+To:       sbgolob@cbttape.org
+
+Hello Sam,
+
+Could you please consider the attached file? There are few error
+fixes for the already published code, drastically updated HTML
+documentation, which is delivered in UNICODE UTF-8 encoding now
+to avoid reported problem caused by the different code pages used
+for EBCDIC-ASII transfer. HTML members may be transferred to the
+workstation (PC) as binary files now.
+
+BTW. This binary transfer is not 100% correct, because CRLF lost
+in this case, but transferred HTML pages represented properly,
+regardless of losted CRLF. To get an original HTML files with
+CRLF they should be transferred in text mode after the following
+SITE directive:
+
+QUOTE SITE ENCODING=MBCS DBSUB MBDATA=(UTF-8,UTF-8) MBSENDSEOL=CRLF
+
+However, as I wrote before, binary transfer would be strong
+enough to get a correct data representation.
+
+Member $NOTE00 updated accordingly. All code re-tested under z/OS 2.4.
+
+I've also added the following tools:
+
+LZ       -  Full screen list and browse of ZIP archives under ISPF.
+
+LM       -  Copy, move, delete, rename, update statistic of
+            PDS/PDSE members using ISPF LM service.
+
+RXGIM    -  REXX interface to SMP/E (GIMAPI) written in PL/I.
+            Both source and load provided. An alternative of
+            CBTTAPE FILE 778 by Daniel Gaeta, but RXGIM returns
+            structured data.
+
+SCT      -  Cloning tool. Copies runtime code to the desired
+            environment and change code as specified to enable it
+            to be executed in that environment.
+
+ISPCS    -  Start ISPF Client/Server session with single click on
+            Windows icon without use 3270 session at all.
+
+Thank you in advance,
+Gregory
+

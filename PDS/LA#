@@ -1,0 +1,16 @@
+Function:
+        Delete, rename, copy, move, update statistic of PDS/PDSE members
+        using ISPF LM service.
+
+Syntax:
+       LM { Delete library(member) }
+          { Rename library(member) NEWname(member) }
+          { Stat   library(member) ÝUser(id)¨ ÝCReated(date)¨
+                   ÝUPdated(date time)¨ }
+          { Copy   library(member) libraryÝ(member)¨ }
+          { Move   library(member) libraryÝ(member)¨ }
+
+Usage:
+        Unlike TSO and IDCAMS commands, ISPF LM service can access members
+        even if library allocated to someone else. This procedure useful
+        for batch, because ISPF 3.2, 3.3 and 3.4 are preferred.

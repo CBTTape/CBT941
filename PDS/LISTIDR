@@ -1,0 +1,20 @@
+/* REXX/370 */
+/*
+
+Description:
+       AMBLIST interactive interface
+
+Function:
+       Invoke AMBLIST interactively to perform LISTIDR against
+       particural load module or program object.
+
+Syntax:
+       LISTIDR dataset(member) or as line command on 3.4
+
+(C) 2006-2020 Gregori Bliznets GregoryTwin@gmail.com
+*/
+trace off
+parse arg ambparm
+'%amblist listidr 'ambparm
+exit
+

@@ -1,0 +1,138 @@
+Function:
+        RXGIM is a program (load module) that can be called by a REXX
+        application to query the contents of the CSI.
+        RXGIM uses REXX variables both to receive the query parameters
+        from the caller and to return the query output to the caller.
+        To request a query, you must set up the REXX input data structure
+        (REXX stem) containing the appropriate query parameters and call
+        RXGIM.
+
+Syntax:
+        The general form of the RXGIM call is:
+        LINKMVS 'RXGIM ÝHLQ¨'
+        where HLQ specifies the name of the REXX variable. This variable
+        specified the root name of the REXX data structure (REXX stem).
+        If HLQ omitted, RXGIM is used as a root name.
+
+Usage:
+        The following parameters are part of the input data structure
+        pointed to by the HLQ. This data structure, in turn, contains
+        pointers to character strings that specify from where data is
+        to be retrieved (that is, which CSI, zones, and entry types) and,
+        optionally, a list of subentries and a filter, which allow you to
+        specify conditions that will be used to determine which entries
+        are retrieved. The specific zone name can be a ZONESET name.
+        The command will first check whether the name is a ZONESET. If not,
+        it will check the ZONEINDEX. All the parameters are required except
+        the subentry and filter parameters:
+
+        HLQ.CSI
+        A character string that specifies the name of the global CSI to be
+        searched by the QUERY command. Length of the value cannot be greater
+        than 44. The DDNAME used when allocating the data set is SMPCSI.
+        Input is accepted in mixed case. HLQ.CSI may specified as empty string
+        indicates that the calling program has already allocated a global CSI
+        data set as the SMPCSI DDNAME.
+
+        HLQ.ZONE
+        A character string that specifies the zones from which data is to be
+        retrieved. You may enter one or more specific zone names separated
+        by commas or blanks, or any of these values:
+        GLOBAL    Use the global zone
+        ALLTZONES Use all target zones
+        ALLDZONES Use all DLIB zones
+        *         Use all zones defined in the GLOBAL zone index
+        Except for the asterisk (*), these values can be used together and with
+        specific zone names, provided that all values are separated by commas
+        or blanks. The asterisk (*) must be used alone.
+        A zone can be specified only once in the zone parameter. A specific
+        DLIB zone name along with the ALLDZONES keyword or a specific target
+        zone name along with the ALLTZONES keyword does not cause a message to
+        be issued. However, processing for the duplicated zone names will be
+        done only once. Spaces can be used freely between values and commas.
+        Input is accepted in mixed case.
+
+        HLQ.ENTRY
+        A character string that indicates the entry types from the specified
+        zones to be searched. You can specify one or more entries, separated
+        by commas or blanks, or you can specify an asterisk (*) to indicate
+        that all entries are to be searched. If an asterisk is used, no other
+        values may be specified. An entry can be specified only once in the
+        entry parameter. Spaces can be used freely between entry names and
+        commas. Input is accepted in mixed case. The entry types specified
+        must be valid CSI entry types.
+
+        HLQ.SUBENTRY
+        Each CSI entry has a set of subentries associated with it. The subentry
+        parameter is a pointer to a character string used to indicate the
+        subentries for which data is retrieved. Several subentries can be
+        specified separated by commas or blanks, or you can specify an asterisk
+        (*) to indicate that all subentries are to be searched. If an asterisk
+        is used, no other values may be specified.
+        A subentry can be specified only once in the subentry parameter. Spaces
+        can be used freely between subentry names and commas. Input is accepted
+        in mixed case.
+
+        HLQ.FILTER
+        A character string that specifies the set of conditions with which to
+        limit the set of entries being retrieved. A condition is in the form:
+        subentry operator 'value', for example,
+        FMID = 'HP10230' or INSTALLDATE >= '00203'.
+        Input is accepted in mixed case. The subentry types are folded to upper
+        case when the command is processed. The fixed values are not changed.
+        Filter is an optional parameter. When no filtering is desired, set the
+        length field (filterlen) to zero (0).
+
+        Note: All 5 input variables must be set by called REXX application,
+        otherwise error returns. However, some variable may be empty if
+        required.
+
+Output data structure
+       The CSI data is made up of entries, which can be thought of as record
+       types, and subentries, which can be considered the fields within those
+       records. Each entry has a set of subentries. Those subentry values may
+       be a single value, such as FMID subentry of the MOD entry. Other
+       subentries are made up of a list of values, such as the LMOD subentry
+       of the MOD entry, which lists all the LMODs that contain the MOD.
+
+       The data returned from the query follows this principle in that it is
+       organized by entries and subentries. The following variables are set
+       by RXGIM to represent the output data structure:
+
+       HLQ.REPLY.0
+       Number of entries returned. If error occurs and RXGIM returns return
+       code other than 0 and 4, this variable would set to 0.
+
+       HLQ.REPLY.i
+       Entry returned by SMP/E API Query in form name type value
+
+       HLQ.REPLY.i.0
+       Number of sub-entries returned by SMP/E API Query
+
+       HLQ.REPLY.i.j
+       Sub-entry type returned by SMP/E API Query
+
+       HLQ.REPLY.i.j.0
+       Number of items of Sub-entry j returned by SMP/E API Query
+
+       HLQ.REPLY.i.j.k
+       Item of Sub-entry returned by SMP/E API Query
+
+       HLQ.ERROR.0
+       Number of error messages returned. If no error occurs, this variable
+       set to 0.
+
+       HLQ.ERROR.i
+       Text of the of error message returned.
+
+       HLQ.REASON
+       GIMAPI reason code (decimal).
+
+       HLQ.VERSION
+       Version of GIMAPI and RXGIM. 10 bytes returned vvrrmmppxx, where
+       vv - version of GIMAPI, rr - release of GIMAPI, mm - modification code
+       of GIMAPI, pp - GIMAPI PTF code, xx - version of RXGIM, currently 02.
+
+       In case of the negative RXGIM code no any REXX variable are meaningfull.
+
+Please see RXGIM HTML document for a more detail description.

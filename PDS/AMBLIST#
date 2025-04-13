@@ -1,0 +1,131 @@
+Function:
+ 	Invoke AMBLIST interactively to perform an available function
+        (LISTIDR, LISTLOAD, LISTOBJ, LISTLPA) and browse output.
+
+
+Syntax:
+  	AMBLIST Ý { LISTIDR | LISTXRF | LISTMOD | LISTOBJ | LISTLPA }
+        library(member) ¨
+
+Usage:
+  	Enter AMBLIST without parameters (TSO %AMBLIST).
+
+   Menu  Utilities  Compilers  Help
+ -------------------------------------------------------------------------------
+                                 AMBLIST Utility
+ Command ===>
+
+ Option. . . . . . .  1  1 LISTIDR (List load module identification records)
+                         2 LISTLOAD XREF (Load module cross-reference)
+                         3 LISTLOAD (Load module map)
+                         4 LISTOBJ (Object module map)
+                         5 LISTLPA (Link Pack Area listing)
+
+ Input
+ Library . . . . . .  sys1.linklib
+ Member. . . . . . .  iefbr14
+ Volume serial . . .
+
+ Output
+ Space units . . . .  TRACK    (TRACK, TRK, CYLINDER, CYL)
+ Primary quantity. .  5        (In above units)
+ Secondary quantity.  5        (In above units)
+
+
+  F1=HELP      F2=SPLIT     F3=END       F4=RETURN    F5=RFIND     F6=RCHANGE
+  F7=UP        F8=DOWN      F9=SWAP     F10=LEFT     F11=RIGHT    F12=RETRIEVE
+
+Specify AMBLIST option (1-5). For all options except 5 (LISTLPA) full
+qualified library name without quotes and member name must be specified.
+Volume serial required if library is not cataloged. Specify space
+allocation if required. Press ENTER, AMBLIST output appears
+
+   Menu  Utilities  Compilers  Help
+ -------------------------------------------------------------------------------
+ BROWSE    SYS16049.T161057.RA000.IBMUSER.R0100323    Line 00000000 Col 001 080
+********************************* Top of Data **********************************
+ LISTIDR MEMBER=IEFBR14
+                                  *****  M O D U L E   S U M M A R Y  *****
+    MEMBER NAME:  IEFBR14
+    LIBRARY:      SYSLIB
+        NO ALIASES **
+--------------------------------------------------------------------------------
+                       ****          ATTRIBUTES OF MODULE           ****
+                **   BIT  STATUS         BIT  STATUS         BIT  STATUS
+                      0  RENT             1  REUS             2  NOT-OVLY
+                      4  NOT-OL           5  BLOCK            6  EXEC
+                      8  NOT-DC           9  ZERO-ORG         10 EP-ZERO
+                      12 EDIT             13 NO-SYMS          14 F-LEVEL
+--------------------------------------------------------------------------------
+                                    MODULE SSI:        NONE
+                                    APFCODE:           00000000
+                                    RMODE:             24
+
+ Command ===>                                                  Scroll ===> PAGE
+  F1=Help    F2=Split   F3=Exit    F5=Rfind   F7=Up      F8=Down    F9=Swap
+ F10=Left   F11=Right  F12=Cancel
+
+
+AMBLIST with parameters may be also used as TSO commasnd on =6 panel to
+skip dialog and get output at once. Here are also 3 "shortcut" line
+commands LISTIDR, LISTLOAD and LISTOBJ to easily access an appropriate
+AMBLIST functions. Here is an example of LISTIDR usage as a line comand
+on the list of load library members:
+
+   Menu  Functions  Confirm  Utilities  Help
+ ------------------------------------------------------------------------------
+ BROWSE            SYS1.LINKLIB                          Row 0000001 of 0004282
+            Name     Prompt        Alias-of     Size      TTR     AC   AM   RM
+ _________ ABA                     ARCABA     00004140   00EE15   00    31   24
+ _________ ACCOUNT                 IKJEFA00   00001430   049404   00    24   24
+ listidr__ AD                      IRRENV00   00055DE8   07E20C   01    31   24
+ _________ ADDGROUP                IRRENV00   00055DE8   07E20C   01    31   24
+ _________ ADDSD                   IRRENV00   00055DE8   07E20C   01    31   24
+ _________ ADDUSER                 IRRENV00   00055DE8   07E20C   01    31   24
+ _________ ADFGLUET                ADFMDF01   000003C8   001904   00    31  ANY
+ _________ ADFIDF00                           000136C0   00160C   00    31  ANY
+ _________ ADFMCOPY                           00002CF0   001804   00    24   24
+ _________ ADFMDFLT                           00001988   00180D   00    31  ANY
+ _________ ADFMDF0A                           00003B10   001817   00    31  ANY
+ _________ ADFMDF01                           000003C8   001904   00    31  ANY
+ _________ ADFMDF03                           000011B0   00190D   01    31  ANY
+ _________ ADFMDOLD                           00001B30   001916   00    31  ANY
+ _________ ADFMFIND                           00000BE0   001920   00    24   24
+ _________ ADFMPUT                            000007B8   001A04   00    24   24
+ _________ ADRCIPH                            00001348   001A0D   00    31   24
+ Command ===>                                                  Scroll ===> CSR
+  F1=HELP      F2=SPLIT     F3=END       F4=RETURN    F5=RFIND     F6=RCHANGE
+  F7=UP        F8=DOWN      F9=SWAP     F10=LEFT     F11=RIGHT    F12=RETRIEVE
+
+AMBLIST LISTIDR output appears:
+
+   Menu  Utilities  Compilers  Help
+ -------------------------------------------------------------------------------
+ BROWSE    SYS20136.T160559.RA000.TS6479.R0131967   Line 0000000000 Col 001 080
+********************************* Top of Data **********************************
+ LISTIDR MEMBER=AD
+                                  *****  M O D U L E   S U M M A R Y  *****
+    MEMBER NAME:  IRRENV00
+    LIBRARY:      SYSLIB
+        ** ALIASES **      ENTRY POINT    AMODE
+       ** AD                0002FC20        31
+          ADDGROUP          0002FC50        31
+          ADDSD             0002FC30        31
+          ADDUSER           0002FC70        31
+          AG                0002FC40        31
+          ALD               0002FCA0        31
+          ALG               0002FCC0        31
+          ALTDSD            0002FCB0        31
+          ALTGROUP          0002FCD0        31
+          ALTUSER           0002FC90        31
+          ALU               0002FC80        31
+          AU                0002FC60        31
+ Command ===>                                                  Scroll ===> CSR
+  F1=HELP      F2=SPLIT     F3=END       F4=RETURN    F5=RFIND     F6=RCHANGE
+  F7=UP        F8=DOWN      F9=SWAP     F10=LEFT     F11=RIGHT    F12=RETRIEVE
+
+Please note: LISTIDR and LISTLOAD line command may be used against load
+module or program object only, LISTOBJ line command - against object
+module only. If you occidentally use these line command against member
+with impropter content you will get an utility error message.
+

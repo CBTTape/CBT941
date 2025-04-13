@@ -1,0 +1,198 @@
+/* REXX/370 */
+/*
+
+Description:
+       Copy, move, rename, delete, update statistic of PDS/PDSE members
+       using ISPF LM service
+
+Function:
+       Delete, rename, copy, move PDS/PDSE members using ISPF LM service.
+       Unlike TSO and IDCAMS commands, ISPF LM service can access members
+       even if library allocated to someone else. This procedure useful
+       for batch, because ISPF 3.2, 3.3 and 3.4 are preferred.
+
+Syntax:
+       LM Delete library(member)
+          Rename library(member) NEWname(member)
+          Stat   library(member) ÝUser(id)¨ ÝCReated(date)¨ ÝUPdated(date time)¨
+          Copy   library(member) libraryÝ(member)¨
+          Move   library(member) libraryÝ(member)¨
+
+Parameters:
+       library - library contains member to be processed. Mandatory
+       member -  member to be processed. Mandatory
+       date - yy/mm/dd
+       time - hh:mm
+
+Author:
+       Gregori Bliznets gregorytwin@gmail.com
+
+History:
+       09.06.2004 Initial version.
+       26.08.2021 Revised.
+
+*/
+parse upper arg act parms
+fid = ''
+tid = ''
+nmbr = ''
+opt = ''
+cdate = ''
+mtime = ''
+mdate = ''
+action.0 = 5
+action.1 = 'DELETE'
+action.2 = 'RENAME'
+action.3 = 'STATS'
+action.4 = 'COPY'
+action.5 = 'MOVE'
+a = 0
+do i = 1 to action.0
+  if abbrev(action.i,act,1)
+  then a = i
+end
+if a = 0
+then do
+  say 'Unknow action: 'act
+  rc = 20
+  signal quit
+  end
+if a < 4 /* DELETE, RENAME, STATS */
+then parse var parms tdsn parms
+else parse var parms fdsn tdsn parms
+parse var tdsn tlib '(' tmbr ')'
+parse var fdsn flib '(' fmbr ')'
+address ISPEXEC
+if tlib = ''
+then do
+  say 'Target library not specified'
+  rc = 20
+  signal quit
+  end
+if tmbr = ''
+then do
+  say 'Target member not specified'
+  rc = 20
+  signal quit
+  end
+do while parms <> ''
+  parse var parms kwd '(' val ')' parms
+  select
+  when abbrev('NEWNAME', kwd, 1) & a = 2 /* RENAME */
+  then nmbr = val
+  when abbrev('REPLACE', kwd, 1) & a > 3 /* COPY, MOVE */
+  then opt = 'REPLACE'
+  when abbrev('USER', kwd, 1) & a = 3 /* STATS */
+  then user = val
+  when abbrev('CREATED', kwd, 2) & a = 3 /* STATS */
+  then cdate = val
+  when abbrev('UPDATED', kwd, 2) & a = 3 /* STATS */
+  then parse var val mdate mtime
+  otherwise
+    say "Unknown option: "parms
+    rc = 20
+    signal quit
+  end
+end
+if a = 2 & nmbr = ''/* RENAME */
+then do
+  say 'Target member not specified'
+  rc = 20
+  signal quit
+  end
+if a > 3 /* COPY, MOVE */
+then do
+  if flib = ''
+  then do
+    say 'Source library not specified'
+    rc = 20
+    signal quit
+    end
+  if fmbr = ''
+  then do
+    say 'Source member not specified'
+    rc = 20
+    signal quit
+    end
+  end
+
+if left(flib,1) = "'"
+then flib = flib"'"
+if left(tlib,1) = "'"
+then tlib = tlib"'"
+rc = 0
+'CONTROL ERRORS RETURN'
+if a > 3 /* COPY, MOVE */
+then do
+  rc = ispf('LMINIT DATAID(FID) DATASET('flib') ENQ(SHR)', 0)
+  end
+rc = ispf('LMINIT DATAID(TID) DATASET('tlib') ENQ(SHRW)', 0)
+if a < 3 /* DELETE, RENAME */
+then rc = ispf('LMOPEN DATAID('tid') OPTION(OUTPUT)', 0)
+if a = 3 /* STATS */
+then rc = ispf('LMOPEN DATAID('tid') OPTION(INPUT)', 0)
+select
+when a = 1 /* DELETE */
+then do
+  rc = ispf('LMMDEL DATAID('tid') MEMBER('tmbr') NOENQ', 4)
+  say tdsn' deleted'
+  end
+when a = 2 /* RENAME */
+then do
+  rc = ispf('LMMREN DATAID('tid') MEMBER('tmbr') NEWNAME('nmbr')', 4)
+  fdsn = tdsn
+  if left(tlib,1) = "'"
+  then tdsn = "'"strip(tlib, 'B', "'")"("nmbr")'"
+  say fdsn' renamed to 'tdsn
+  end
+when a = 3 /* STATS */
+then do
+  rc = ispf('LMMFIND DATAID('tid') MEMBER('tmbr') STATS(YES)', 0)
+  if user <>''
+  then zluser = user
+  if cdate <> ''
+  then zlcdate = cdate
+  if mdate <> ''
+  then zlmdate = mdate
+  if mtime <> ''
+  then zlmtime = mtime
+  rc = ispf('LMMSTATS DATAID('tid') MEMBER('tmbr') USER('zluser') ' ,
+       'CREATED('zlcdate') MODDATE('zlmdate') MODTIME('zlmtime')', 4)
+  say tdsn' statistics updated'
+  end
+when a = 4 /* COPY */
+then do
+  rc = ispf('LMCOPY FROMID('fid') FROMMEM('fmbr') TODATAID('tid') ' ,
+       'TOMEM('tmbr')' opt, 0)
+  say fdsn' copied to 'tdsn
+  end
+when a = 5 /* MOVE */
+then do
+  rc = ispf('LMMOVE FROMID('fid') FROMMEM('fmbr') TODATAID('tid') ',
+       'TOMEM('tmbr')' opt, 0)
+  say fdsn' moved to 'tdsn
+  end
+end
+
+quit:
+  zispfrc = rc
+  if tid <> ''
+  then rc = ispf('LMCLOSE DATAID('tid')')
+  if tid <> ''
+  then rc = ispf('LMFREE DATAID('tid')')
+  if fid <> ''
+  then rc = ispf('LMCLOSE DATAID('fid')')
+  if fid <> ''
+  then rc = ispf('LMFREE DATAID('fid')')
+  rc = ispf('VPUT ZISPFRC SHARED')
+  exit zispfrc
+
+ispf:
+  parse arg cmd, cc
+  address ISPEXEC cmd
+  if cc <> '' & rc > cc
+  then do
+    say strip(zerrlm)
+    signal quit
+    end
+  return rc
